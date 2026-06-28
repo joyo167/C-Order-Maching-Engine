@@ -1,0 +1,7 @@
+# compiled binaries
+engine
+*.o
+*.exe
+
+# macOS junk files
+.DS_Store
