@@ -1,4 +1,4 @@
-#include "orderbook.h"
+#include "orderbook_v3.h"
 #include <cassert>
 #include <iostream>
 
@@ -8,7 +8,7 @@
 // not "I read the printout and it looked right."
 
 void test_partial_fill() {
-    orderbook book;
+    orderbook_v3 book;
     book.submit_limit_order(1, 100, Side::Sell, 101.0, 10);
     book.submit_limit_order(2, 200, Side::Buy, 101.0, 4);
 
@@ -28,7 +28,7 @@ void test_partial_fill() {
 }
 
 void test_full_fill_removes_order() {
-    orderbook book;
+    orderbook_v3 book;
     book.submit_limit_order(1, 100, Side::Sell, 50.0, 5);
     book.submit_limit_order(2, 200, Side::Buy, 50.0, 5);
 
@@ -46,7 +46,7 @@ void test_full_fill_removes_order() {
 }
 
 void test_cancel_removes_resting_order() {
-    orderbook book;
+    orderbook_v3 book;
     book.submit_limit_order(1, 100, Side::Sell, 75.0, 10);
 
     bool canceled = book.cancel_order(1);
@@ -60,7 +60,7 @@ void test_cancel_removes_resting_order() {
 }
 
 void test_cancel_nonexistent_order_fails() {
-    orderbook book;
+    orderbook_v3 book;
     book.submit_limit_order(1, 100, Side::Sell, 75.0, 10);
 
     bool canceled = book.cancel_order(999);
@@ -70,7 +70,7 @@ void test_cancel_nonexistent_order_fails() {
 }
 
 void test_market_order_sweeps_multiple_levels() {
-    orderbook book;
+    orderbook_v3 book;
     book.submit_limit_order(1, 100, Side::Sell, 101.0, 4);
     book.submit_limit_order(2, 100, Side::Sell, 102.0, 5);
 
@@ -86,7 +86,7 @@ void test_market_order_sweeps_multiple_levels() {
 }
 
 void test_market_order_does_not_rest_if_unfilled() {
-    orderbook book;
+    orderbook_v3 book;
     book.submit_limit_order(1, 100, Side::Sell, 101.0, 3);
 
     // Market buy wants 10, only 3 are available. The other 7 must
@@ -105,7 +105,7 @@ void test_market_order_does_not_rest_if_unfilled() {
 }
 
 void test_self_trade_is_prevented() {
-    orderbook book;
+    orderbook_v3 book;
     book.submit_limit_order(1, 100, Side::Sell, 101.0, 10);
     book.submit_limit_order(2, 100, Side::Buy, 101.0, 4); // same trader as #1
 
@@ -120,7 +120,7 @@ void test_self_trade_is_prevented() {
 }
 
 void test_price_time_priority_among_equal_prices() {
-    orderbook book;
+    orderbook_v3 book;
     // Two sells at the SAME price, placed in this order.
     book.submit_limit_order(1, 100, Side::Sell, 101.0, 5); // placed first
     book.submit_limit_order(2, 200, Side::Sell, 101.0, 5); // placed second
@@ -139,9 +139,11 @@ void test_price_time_priority_among_equal_prices() {
 }
 
 void test_zero_quantity_order_is_noop() {
-    orderbook book;
+    orderbook_v3 book;
+    // A zero-quantity order shouldn't rest on the book or produce a trade.
     book.submit_limit_order(1, 100, Side::Sell, 101.0, 0);
 
+    // If it had incorrectly rested, this buy would find it and trade.
     book.submit_limit_order(2, 200, Side::Buy, 101.0, 5);
     assert(book.get_trades().size() == 0);
 
@@ -149,7 +151,7 @@ void test_zero_quantity_order_is_noop() {
 }
 
 void test_cancel_after_partial_fill() {
-    orderbook book;
+    orderbook_v3 book;
     book.submit_limit_order(1, 100, Side::Sell, 100.0, 10);
     book.submit_limit_order(2, 200, Side::Buy, 100.0, 4); // order #1 now has 6 left
 
@@ -159,8 +161,9 @@ void test_cancel_after_partial_fill() {
     bool canceled = book.cancel_order(1); // must still be cancelable with 6 remaining
     assert(canceled == true);
 
+    // If it's truly gone, a new buy at 100 should find nothing.
     book.submit_limit_order(3, 300, Side::Buy, 100.0, 1);
-    assert(book.get_trades().size() == 1); // unchanged - order #1 is truly gone
+    assert(book.get_trades().size() == 1); // unchanged
 
     std::cout << "test_cancel_after_partial_fill passed" << ln;
 }

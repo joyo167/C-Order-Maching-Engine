@@ -4,4 +4,8 @@ engine
 *.exe
 
 # macOS junk files
-.DS_Store
+.DS_Storecli_menu
+run_tests
+run_tests_v3
+bench_3way
+benchmark_engine
